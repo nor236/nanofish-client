@@ -1,12 +1,12 @@
 [package]
 name = "nanofish"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
-description = "🐟 A lightweight, `no_std` HTTP client for embedded systems built on top of Embassy networking."
+description = "🐟 A lightweight, `no_std` HTTP client and server for embedded systems built on top of Embassy networking."
 documentation = "https://docs.rs/nanofish"
 repository = "https://github.com/rttfd/nanofish"
 license = "MIT"
-keywords = ["no_std", "embedded", "async", "http_client"]
+keywords = ["no_std", "embedded", "async", "http_client", "http_server"]
 authors = ["rttf <contact@rttf.dev>"]
 
 [features]
@@ -26,5 +26,8 @@ embassy-time = "0.5.0"
 embedded-io-async = "0.6.1"
 embedded-tls = { version = "0.17.0", default-features = false, optional = true }
 heapless = "0.9.1"
-rand_chacha = { version = "0.9.0", default-features = false, optional = true }
-rand_core = { version = "0.9.3", optional = true }
+rand_chacha = { version = "0.3", default-features = false, optional = true }
+rand_core = { version = "0.6.4", optional = true }
+
+[dev-dependencies]
+futures-lite = "2.0"

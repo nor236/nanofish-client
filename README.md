@@ -6,9 +6,9 @@
 
 # Nanofish
 
-A lightweight, `no_std` HTTP client for embedded systems built on Embassy networking with zero-copy response handling.
+A lightweight, `no_std` HTTP client and server for embedded systems built on Embassy networking with zero-copy response handling.
 
-Nanofish is designed for embedded systems with limited memory. It provides a simple HTTP client that works without heap allocation, making it suitable for microcontrollers and `IoT` devices. The library uses zero-copy response handling where response data is borrowed directly from user-provided buffers, keeping memory usage predictable and efficient.
+Nanofish is designed for embedded systems with limited memory. It provides a simple HTTP client and server that works without heap allocation, making it suitable for microcontrollers and `IoT` devices. The library uses zero-copy response handling where response data is borrowed directly from user-provided buffers, keeping memory usage predictable and efficient.
 
 ## Key Features
 
@@ -18,9 +18,10 @@ Nanofish is designed for embedded systems with limited memory. It provides a sim
 - **No Standard Library** - Full `no_std` compatibility with no heap allocations
 - **Embassy Integration** - Built on Embassy's async networking
 - **Complete HTTP Support** - All standard HTTP methods (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE, CONNECT)
+- **HTTP Server** - Built-in async server with customizable timeouts and request handling
 - **Smart Response Parsing** - Automatic text/binary detection based on Content-Type headers
 - **Easy Header Management** - Pre-defined constants and helper methods for common headers
-- **Optional TLS Support** - HTTPS support with embedded-tls when enabled
+- **Optional TLS Support** - HTTPS client support with embedded-tls when enabled (server is HTTP-only)
 - **Timeout & Retry Support** - Built-in handling for network issues
 - **DNS Resolution** - Automatic hostname resolution
 
@@ -49,13 +50,13 @@ Network → YOUR Buffer (direct) → Zero-Copy References → User Code (no copi
 ### Basic HTTP Support (Default)
 ```toml
 [dependencies]
-nanofish = "0.8.0"
+nanofish = "0.9.0"
 ```
 
 ### With TLS/HTTPS Support
 ```toml
 [dependencies]
-nanofish = { version = "0.8.0", features = ["tls"] }
+nanofish = { version = "0.9.0", features = ["tls"] }
 ```
 
 ### Available Features
@@ -79,7 +80,7 @@ async fn example(stack: &Stack<'_>) -> Result<(), nanofish::Error> {
 let client = DefaultHttpClient::new(unsafe { core::ptr::NonNull::dangling().as_ref() });
 let mut response_buffer = [0u8; 8192];
 let headers = [
-    HttpHeader::user_agent("Nanofish/0.8.0"),
+    HttpHeader::user_agent("Nanofish/0.9.0"),
     HttpHeader::content_type(mime_types::JSON),
     HttpHeader::authorization("Bearer token123"),
 ];
@@ -250,6 +251,142 @@ let (response, _) = client.connect("http://proxy.example.com", &headers, &mut bu
 All methods return a `Result<(HttpResponse, usize), Error>` where:
 - `HttpResponse` contains zero-copy references to data in your buffer
 - `usize` is the number of bytes read into your buffer
+
+## HTTP Server
+
+Nanofish includes a built-in HTTP server perfect for embedded systems and `IoT` devices. The server is async, lightweight, and has customizable timeouts.
+
+> **Important Note**: The server only supports plain HTTP connections, not HTTPS/TLS. While the Nanofish client supports both HTTP and HTTPS, the server implementation is HTTP-only. For secure connections in production, use a reverse proxy (like nginx) or load balancer that handles TLS termination.
+
+### Basic Server Usage
+
+```rust,ignore
+use nanofish::{DefaultHttpServer, HttpHandler, HttpRequest, HttpResponse, ResponseBody, StatusCode};
+use embassy_net::Stack;
+
+// Create a simple request handler
+struct MyHandler;
+
+impl HttpHandler for MyHandler {
+    async fn handle_request(&mut self, request: &HttpRequest<'_>) -> Result<HttpResponse<'_>, nanofish::Error> {
+        match request.path {
+            "/" => Ok(HttpResponse {
+                status_code: StatusCode::Ok,
+                headers: Vec::new(),
+                body: ResponseBody::Text("<h1>Hello World!</h1>"),
+            }),
+            "/api/status" => Ok(HttpResponse {
+                status_code: StatusCode::Ok,
+                headers: Vec::new(),
+                body: ResponseBody::Text("{\"status\":\"ok\"}"),
+            }),
+            _ => Ok(HttpResponse {
+                status_code: StatusCode::NotFound,
+                headers: Vec::new(),
+                body: ResponseBody::Text("Not Found"),
+            }),
+        }
+    }
+}
+
+async fn run_server(stack: Stack<'_>) -> Result<(), nanofish::Error> {
+    let mut server = DefaultHttpServer::new(80);  // Listen on port 80
+    let handler = MyHandler;
+    
+    // This runs forever, handling requests
+    server.serve(stack, handler).await;
+}
+```
+
+### Server Memory Configuration
+
+Just like the client, you can choose different server sizes:
+
+```rust,ignore
+use nanofish::{DefaultHttpServer, SmallHttpServer, HttpServer};
+
+// Default server (4KB buffers) - good for most use cases
+let server = DefaultHttpServer::new(80);
+
+// Small server (1KB buffers) - for memory-constrained devices  
+let server = SmallHttpServer::new(80);
+
+// Custom server with your own buffer sizes
+type MyServer = HttpServer<2048, 2048, 1024, 8192>;  // RX, TX, Request, Response buffer sizes
+let server = MyServer::new(80);
+```
+
+### Server Timeouts
+
+You can customize how long the server waits for different operations:
+
+```rust,ignore
+use nanofish::{DefaultHttpServer, ServerTimeouts};
+
+// Default timeouts: 10s accept, 30s read, 60s handler
+let server = DefaultHttpServer::new(80);
+
+// Custom timeouts
+let timeouts = ServerTimeouts::new(
+    5,   // 5 seconds to accept new connections
+    15,  // 15 seconds to read request data
+    30   // 30 seconds for your handler to process requests
+);
+let server = DefaultHttpServer::with_timeouts(80, timeouts);
+```
+
+### Request Information
+
+Your handler receives detailed information about each request:
+
+```rust,ignore
+impl HttpHandler for MyHandler {
+    async fn handle_request(&mut self, request: &HttpRequest<'_>) -> Result<HttpResponse<'_>, nanofish::Error> {
+        // Check the HTTP method
+        match request.method {
+            HttpMethod::GET => { /* handle GET */ }
+            HttpMethod::POST => { /* handle POST */ }
+            _ => { /* handle other methods */ }
+        }
+        
+        // Look at the request path
+        println!("Path: {}", request.path);
+        
+        // Check headers
+        for header in &request.headers {
+            println!("Header: {}: {}", header.name, header.value);
+        }
+        
+        // Access request body (for POST, PUT, etc.)
+        if !request.body.is_empty() {
+            println!("Body: {} bytes", request.body.len());
+        }
+        
+        // Return your response...
+        Ok(HttpResponse { /* ... */ })
+    }
+}
+```
+
+### Simple Built-in Handler
+
+For quick testing, you can use the built-in `SimpleHandler`:
+
+```rust,ignore
+use nanofish::{DefaultHttpServer, SimpleHandler};
+
+async fn run_test_server(stack: Stack<'_>) {
+    let mut server = DefaultHttpServer::new(8080);
+    let handler = SimpleHandler;  // Serves "/" and "/health" endpoints
+    
+    server.serve(stack, handler).await;
+}
+```
+
+The `SimpleHandler` provides:
+- `GET /` → HTML welcome page
+- `GET /health` → JSON status response  
+- Everything else → 404 Not Found
 
 ## Memory Efficiency Examples
 
