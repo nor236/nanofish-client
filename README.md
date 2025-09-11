@@ -194,7 +194,7 @@ if response.status_code.is_success() {
 if let Some(content_length) = response.content_length() {
     println!("Content length: {} bytes", content_length);
 }
-
+```
 
 ## HTTP Methods Support
 
