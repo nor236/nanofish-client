@@ -28,6 +28,16 @@ pub enum HttpMethod {
     HEAD,
 }
 
+/// Error type for invalid HTTP methods
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InvalidHttpMethod;
+
+impl core::fmt::Display for InvalidHttpMethod {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Invalid HTTP method")
+    }
+}
+
 impl HttpMethod {
     #[must_use]
     /// Returns the string representation of the HTTP method.
@@ -42,6 +52,44 @@ impl HttpMethod {
             HttpMethod::OPTIONS => "OPTIONS",
             HttpMethod::TRACE => "TRACE",
             HttpMethod::HEAD => "HEAD",
+        }
+    }
+}
+
+impl TryFrom<&str> for HttpMethod {
+    type Error = InvalidHttpMethod;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "GET" => Ok(HttpMethod::GET),
+            "POST" => Ok(HttpMethod::POST),
+            "PUT" => Ok(HttpMethod::PUT),
+            "DELETE" => Ok(HttpMethod::DELETE),
+            "PATCH" => Ok(HttpMethod::PATCH),
+            "HEAD" => Ok(HttpMethod::HEAD),
+            "OPTIONS" => Ok(HttpMethod::OPTIONS),
+            "TRACE" => Ok(HttpMethod::TRACE),
+            "CONNECT" => Ok(HttpMethod::CONNECT),
+            _ => Err(InvalidHttpMethod),
+        }
+    }
+}
+
+impl TryFrom<&[u8]> for HttpMethod {
+    type Error = InvalidHttpMethod;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        match value {
+            b"GET" => Ok(HttpMethod::GET),
+            b"POST" => Ok(HttpMethod::POST),
+            b"PUT" => Ok(HttpMethod::PUT),
+            b"DELETE" => Ok(HttpMethod::DELETE),
+            b"PATCH" => Ok(HttpMethod::PATCH),
+            b"HEAD" => Ok(HttpMethod::HEAD),
+            b"OPTIONS" => Ok(HttpMethod::OPTIONS),
+            b"TRACE" => Ok(HttpMethod::TRACE),
+            b"CONNECT" => Ok(HttpMethod::CONNECT),
+            _ => Err(InvalidHttpMethod),
         }
     }
 }
@@ -61,5 +109,102 @@ mod tests {
         assert_eq!(HttpMethod::OPTIONS.as_str(), "OPTIONS");
         assert_eq!(HttpMethod::TRACE.as_str(), "TRACE");
         assert_eq!(HttpMethod::HEAD.as_str(), "HEAD");
+    }
+
+    #[test]
+    fn test_try_from_str() {
+        // Test valid HTTP methods
+        assert_eq!(HttpMethod::try_from("GET"), Ok(HttpMethod::GET));
+        assert_eq!(HttpMethod::try_from("POST"), Ok(HttpMethod::POST));
+        assert_eq!(HttpMethod::try_from("PUT"), Ok(HttpMethod::PUT));
+        assert_eq!(HttpMethod::try_from("DELETE"), Ok(HttpMethod::DELETE));
+        assert_eq!(HttpMethod::try_from("PATCH"), Ok(HttpMethod::PATCH));
+        assert_eq!(HttpMethod::try_from("HEAD"), Ok(HttpMethod::HEAD));
+        assert_eq!(HttpMethod::try_from("OPTIONS"), Ok(HttpMethod::OPTIONS));
+        assert_eq!(HttpMethod::try_from("TRACE"), Ok(HttpMethod::TRACE));
+        assert_eq!(HttpMethod::try_from("CONNECT"), Ok(HttpMethod::CONNECT));
+
+        // Test invalid HTTP methods
+        assert_eq!(HttpMethod::try_from("get"), Err(InvalidHttpMethod));
+        assert_eq!(HttpMethod::try_from("INVALID"), Err(InvalidHttpMethod));
+        assert_eq!(HttpMethod::try_from(""), Err(InvalidHttpMethod));
+        assert_eq!(HttpMethod::try_from("123"), Err(InvalidHttpMethod));
+    }
+
+    #[test]
+    fn test_try_from_bytes() {
+        // Test valid HTTP methods
+        assert_eq!(HttpMethod::try_from(b"GET".as_slice()), Ok(HttpMethod::GET));
+        assert_eq!(
+            HttpMethod::try_from(b"POST".as_slice()),
+            Ok(HttpMethod::POST)
+        );
+        assert_eq!(HttpMethod::try_from(b"PUT".as_slice()), Ok(HttpMethod::PUT));
+        assert_eq!(
+            HttpMethod::try_from(b"DELETE".as_slice()),
+            Ok(HttpMethod::DELETE)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"PATCH".as_slice()),
+            Ok(HttpMethod::PATCH)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"HEAD".as_slice()),
+            Ok(HttpMethod::HEAD)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"OPTIONS".as_slice()),
+            Ok(HttpMethod::OPTIONS)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"TRACE".as_slice()),
+            Ok(HttpMethod::TRACE)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"CONNECT".as_slice()),
+            Ok(HttpMethod::CONNECT)
+        );
+
+        // Test invalid HTTP methods
+        assert_eq!(
+            HttpMethod::try_from(b"get".as_slice()),
+            Err(InvalidHttpMethod)
+        );
+        assert_eq!(
+            HttpMethod::try_from(b"INVALID".as_slice()),
+            Err(InvalidHttpMethod)
+        );
+        assert_eq!(HttpMethod::try_from(b"".as_slice()), Err(InvalidHttpMethod));
+        assert_eq!(
+            HttpMethod::try_from(b"123".as_slice()),
+            Err(InvalidHttpMethod)
+        );
+    }
+
+    #[test]
+    fn test_invalid_http_method_display() {
+        let error = InvalidHttpMethod;
+        assert_eq!(format!("{error}"), "Invalid HTTP method");
+    }
+
+    #[test]
+    fn test_roundtrip_str_conversion() {
+        let methods = [
+            HttpMethod::GET,
+            HttpMethod::POST,
+            HttpMethod::PUT,
+            HttpMethod::DELETE,
+            HttpMethod::PATCH,
+            HttpMethod::HEAD,
+            HttpMethod::OPTIONS,
+            HttpMethod::TRACE,
+            HttpMethod::CONNECT,
+        ];
+
+        for method in &methods {
+            let str_repr = method.as_str();
+            let parsed = HttpMethod::try_from(str_repr).unwrap();
+            assert_eq!(*method, parsed);
+        }
     }
 }
