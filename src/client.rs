@@ -15,20 +15,26 @@ use embassy_net::{
     tcp::TcpSocket,
 };
 use embassy_net_08 as embassy_net;
-use embedded_io_async_07 as embedded_io_async;
 #[cfg(feature = "tls")]
 use embassy_time::Instant;
 use embassy_time::Timer;
 use embassy_time_05 as embassy_time;
 use embedded_io_async::Write as EmbeddedWrite;
+use embedded_io_async_07 as embedded_io_async;
 
 #[cfg(feature = "tls")]
 use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext};
+#[cfg(feature = "tls")]
+use embedded_tls_018 as embedded_tls;
 use heapless::Vec;
 #[cfg(feature = "tls")]
 use rand_chacha::ChaCha8Rng;
 #[cfg(feature = "tls")]
+use rand_chacha_03 as rand_chacha;
+#[cfg(feature = "tls")]
 use rand_core::SeedableRng;
+#[cfg(feature = "tls")]
+use rand_core_06 as rand_core;
 
 const REQUEST_SIZE: usize = 1024;
 const MAX_HEADERS: usize = 16;
@@ -242,6 +248,8 @@ impl<
         body: Option<&[u8]>,
         response_buffer: &mut [u8],
     ) -> Result<usize, Error> {
+        use embedded_tls_018::UnsecureProvider;
+
         let (host, port) = host_port;
         let mut rx_buffer = [0; TCP_RX];
         let mut tx_buffer = [0; TCP_TX];
@@ -269,12 +277,19 @@ impl<
         let mut read_record_buffer = [0; TLS_READ];
         let mut write_record_buffer = [0; TLS_WRITE];
 
-        let tls_config: TlsConfig<'_, Aes128GcmSha256> = TlsConfig::new().with_server_name(host);
+        let tls_config = TlsConfig::new().with_server_name(host);
         let mut tls = TlsConnection::new(socket, &mut read_record_buffer, &mut write_record_buffer);
         let mut rng = ChaCha8Rng::from_seed(timeseed());
 
-        tls.open::<_, NoVerify>(TlsContext::new(&tls_config, &mut rng))
-            .await?;
+        // tls.open::<_, NoVerify>(TlsContext::new(&tls_config, &mut rng))
+        //     .await?;
+
+        tls.open(TlsContext::new(
+            &tls_config,
+            UnsecureProvider::new::<Aes128GcmSha256>(rng),
+        ))
+        .await
+        .expect("error establishing TLS connection");
 
         let http_request = Self::build_http_request(method, host, path, headers, body)?;
 

@@ -1,4 +1,6 @@
 use embassy_net_08 as embassy_net;
+#[cfg(feature = "tls")]
+use embedded_tls_018 as embedded_tls;
 /// Errors that can occur during HTTP operations
 ///
 /// This enum represents all possible errors that can be returned by the HTTP client
