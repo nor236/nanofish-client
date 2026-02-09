@@ -1,33 +1,33 @@
 [package]
-name = "nanofish"
+name = "nanofish-client"
 version = "0.9.1"
 edition = "2024"
 description = "🐟 A lightweight, `no_std` HTTP client and server for embedded systems built on top of Embassy networking."
-documentation = "https://docs.rs/nanofish"
-repository = "https://github.com/rttfd/nanofish"
+documentation = "https://docs.rs/nanofish-client"
+repository = "https://github.com/nor236/nanofish-client"
 license = "MIT"
 keywords = ["no_std", "embedded", "async", "http_client", "http_server"]
-authors = ["rttf <contact@rttf.dev>"]
+authors = ["nor236 <906033314@qq.com>"]
 
 [features]
 default = []
-tls = ["dep:embedded-tls", "dep:rand_core", "dep:rand_chacha"]
+tls = ["dep:embedded-tls-018", "dep:rand_core_06", "dep:rand_chacha_03"]
 
 [dependencies]
 defmt = "1.0.1"
-embassy-net = { version = "0.7.1", features = [
+embassy-net-08 = { package = "embassy-net", version = "0.8.0", features = [
     "defmt",
     "dns",
     "medium-ethernet",
     "proto-ipv6",
     "tcp",
 ] }
-embassy-time = "0.5.0"
-embedded-io-async = "0.6.1"
-embedded-tls = { version = "0.17.0", default-features = false, optional = true }
-heapless = "0.9.1"
-rand_chacha = { version = "0.3", default-features = false, optional = true }
-rand_core = { version = "0.6.4", optional = true }
+embassy-time-05 = { package = "embassy-time", version = "0.5.0" }
+embedded-io-async-07 = { package = "embedded-io-async", version = "0.7.0" }
+embedded-tls-018 = { package = "embedded-tls", version = "0.18.0", default-features = false, optional = true }
+heapless = "0.9.2"
+rand_chacha_03 = { package = "rand_chacha", version = "0.3.1", default-features = false, optional = true }
+rand_core_06 = { package = "rand_core", version = "0.6.4", optional = true }
 
 [dev-dependencies]
 futures-lite = "2.0"

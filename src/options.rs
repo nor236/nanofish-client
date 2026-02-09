@@ -1,4 +1,5 @@
 use embassy_time::Duration;
+use embassy_time_05 as embassy_time;
 
 /// Options for configuring the HTTP client
 pub struct HttpClientOptions {

@@ -1,3 +1,4 @@
+use embassy_net_08 as embassy_net;
 /// Errors that can occur during HTTP operations
 ///
 /// This enum represents all possible errors that can be returned by the HTTP client

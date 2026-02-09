@@ -7,6 +7,10 @@ use crate::{
     status_code::StatusCode,
 };
 use embassy_net::{Stack, tcp::TcpSocket};
+use embassy_net_08 as embassy_net;
+use embassy_time_05 as embassy_time;
+use embedded_io_async_07 as embedded_io_async;
+
 use embassy_time::{Duration, Timer, with_timeout};
 use embedded_io_async::Write as EmbeddedWrite;
 use heapless::Vec;

@@ -14,10 +14,14 @@ use embassy_net::{
     dns::{self, DnsSocket},
     tcp::TcpSocket,
 };
+use embassy_net_08 as embassy_net;
+use embedded_io_async_07 as embedded_io_async;
 #[cfg(feature = "tls")]
 use embassy_time::Instant;
 use embassy_time::Timer;
+use embassy_time_05 as embassy_time;
 use embedded_io_async::Write as EmbeddedWrite;
+
 #[cfg(feature = "tls")]
 use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext};
 use heapless::Vec;
